@@ -1,0 +1,15 @@
+.text {
+  border: 1px black solid;
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  width: 60vw;
+}
+
+p {
+  margin-left: 4px;
+  margin-right: 4px;
+  font-size: larger;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
