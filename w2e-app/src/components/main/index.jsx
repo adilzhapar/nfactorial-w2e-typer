@@ -1,14 +1,20 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import input from './input.txt';
-
+import Keyboard from 'react-simple-keyboard';
+import "react-simple-keyboard/build/css/index.css";
 
 const Main = () => {
     const [inputWord, setInputWord] = useState("");
     const [words, setWords] = useState();
     const [counter, setCounter] = useState(0);
     const [timer, setTimer] = useState({count: 60, time: 60});
-    const [wpm, setWpm] = useState(0);
+    const [wpm, setWpm] = useState(0); 
     const [isActive, setIsActive] = useState(true);
+    const [accuracy, setAccuracy] = useState();
+    const [step, setStep] = useState(20);
+    const [readyWords, setReadyWords] = useState();
+    const keyboard = useRef();
+    const [layout, setLayout] = useState("default");
 
     const setDefault = () => {
         setInputWord("");
@@ -16,7 +22,14 @@ const Main = () => {
         const count = timer.time;
         setTimer({...timer, count});
         setIsActive(true);
+        setStep(20);
     }
+
+    const onChange = (input) => {
+        setInputWord(input);
+        console.log("Input changed", input);
+        
+    };
 
     const handleTimer = () => {
         const id = setTimeout(() => {
@@ -30,6 +43,7 @@ const Main = () => {
 
     const handleInputWord = (event) => {
         setInputWord(event.target.value);
+        // keyboard.current.setInputWord(event.target.value);
         if(isActive) {
             handleTimer();
         }
@@ -74,10 +88,12 @@ const Main = () => {
                 });
             }
 
+            setDefault();
             setWords(obj);
+            setReadyWords(obj.filter((word) => word.id <= step));
+            
             
         })
-        setDefault();
     }
 
     useEffect(() => {
@@ -88,20 +104,46 @@ const Main = () => {
         
         let cnt = words.filter((word) => word.class === "green" && word.id <= counter).length;
         let sum = (60 / timer.time) * cnt;
+        let acrcy = cnt / counter * 100;
         setWpm(sum);
         console.log(wpm);
+        if(acrcy === 100) {
+            setAccuracy(acrcy);
+        }else{
+            setAccuracy(acrcy.toPrecision(2));
+        }
         
         
         const count = timer.time;
         setTimer({...timer, count});
         setIsActive(false);
-        
     }
+
+    if(counter > step){
+        setReadyWords(words.filter((word) => word.id > step && word.id <= step + 20))
+        setStep(step + 20);
+    }
+
+    const handleShift = () => {
+        const newLayoutName = layout === "default" ? "shift" : "default";
+        setLayout(newLayoutName);
+    };
+
+    const onKeyPress = (button) => {
+        console.log("Button pressed", button);
+
+        /**
+         * If you want to handle the shift and caps lock buttons
+         */
+        if (button === "{shift}" || button === "{lock}") handleShift();
+    };
+
+    
 
     return (
         <div className="page">
             <div className={isActive ? "text": "not-text"}>
-                {words?.map((word) => (
+                {readyWords?.map((word) => (
                     <p key={word.id} className={word.class}>{word.name}</p>
                 ))}
             </div>
@@ -110,8 +152,15 @@ const Main = () => {
                 <button className="refresh-button" onClick={handleTextRefresh}>Refresh text</button>
                 <div>{timer.count}</div>
                 <div>WPM: {wpm}</div>
+                <div>Accuracy: {accuracy}%</div>
             </div>
             
+            <Keyboard
+                keyboardRef={(r) => (keyboard.current = r)}
+                layoutName={layout}
+                onChange={onChange}
+                onKeyPress={onKeyPress}
+            />
         </div>
     );
 }
